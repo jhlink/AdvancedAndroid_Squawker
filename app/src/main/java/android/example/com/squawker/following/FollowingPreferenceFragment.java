@@ -18,8 +18,10 @@ package android.example.com.squawker.following;
 import android.content.SharedPreferences;
 import android.example.com.squawker.R;
 import android.os.Bundle;
+import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceManager;
+import android.support.v7.preference.SwitchPreferenceCompat;
 import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -52,41 +54,23 @@ public class FollowingPreferenceFragment extends PreferenceFragmentCompat implem
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        String asser = getString(R.string.follow_key_switch_asser);
-        String cezanne = getString(R.string.follow_key_switch_cezanne);
-        String jlin = getString(R.string.follow_key_switch_jlin);
-        String lyla = getString(R.string.follow_key_switch_lyla);
-        String nikita = getString(R.string.follow_key_switch_nikita);
-
-        // DONE (2) When a SharedPreference changes, check which preference it is and subscribe or
-        // un-subscribe to the correct topics.
-
-        // Ex. FirebaseMessaging.getInstance().subscribeToTopic("key_lyla");
-        // subscribes to Lyla's squawks.
-
-        // HINT: Checkout res->xml->following_squawker.xml. Note how the keys for each of the
-        // preferences matches the topic to subscribe to for each instructor.
-
-        boolean result = false;
-        if (key.equals(asser)) {
-            result = sharedPreferences.getBoolean(asser, false);
-            handleSubscriptionToKey(asser, result);
-        } else if (key.equals(cezanne)) {
-            result = sharedPreferences.getBoolean(cezanne, false);
-            handleSubscriptionToKey(cezanne, result);
-        } else if (key.equals(jlin)) {
-            result = sharedPreferences.getBoolean(jlin, false);
-            handleSubscriptionToKey(jlin, result);
-        } else if (key.equals(lyla)) {
-            result = sharedPreferences.getBoolean(lyla, false);
-            handleSubscriptionToKey(lyla, result);
-        } else if (key.equals(nikita)) {
-            result = sharedPreferences.getBoolean(nikita, false);
-            handleSubscriptionToKey(nikita, result);
+        Preference preference = findPreference(key);
+        if (preference != null && preference instanceof SwitchPreferenceCompat) {
+            // Get the current state of the switch preference
+            boolean isOn = sharedPreferences.getBoolean(key, false);
+            if (isOn) {
+                // The preference key matches the following key for the associated instructor in
+                // FCM. For example, the key for Lyla is key_lyla (as seen in
+                // following_squawker.xml). The topic for Lyla's messages is /topics/key_lyla
+                // Subscribe
+                FirebaseMessaging.getInstance().subscribeToTopic(key);
+                Log.d(LOG_TAG, "Subscribing to " + key);
+            } else {
+                // Un-subscribe
+                FirebaseMessaging.getInstance().unsubscribeFromTopic(key);
+                Log.d(LOG_TAG, "Un-subscribing to " + key);
+            }
         }
-
-        // DONE (3) Make sure to register and unregister this as a Shared Preference Change listener, in
-        // onCreate and onDestroy.
     }
 
     private void handleSubscriptionToKey(String key, boolean isSubscribed) {
